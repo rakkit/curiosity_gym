@@ -4,7 +4,6 @@ import os
 from PIL import Image, ImageTk
 import matplotlib.pyplot as plt
 import time
-import multiprocessing
 
 from cores.game import App
 import tkinter as tk
@@ -24,8 +23,7 @@ app = App(tk.Tk(), game)
 game.set_window(app)
 
 if __name__ == '__main__':
-    q = multiprocessing.Queue()
-    multiprocessing.Process(target=train_your_model, args=(game,)).start()
+    train_your_model()
 
 app.window.mainloop()
 
