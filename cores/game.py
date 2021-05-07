@@ -17,21 +17,15 @@ from cores.vehicle import vehicleStatus, ACTION_MAP
 import random
 
 
-class App(Thread):
-    def __init__(self, game):
-        Thread.__init__(self)
-        self.window = None
+class App:
+    def __init__(self, tk_root, game):
+        self.window = tk_root
         self.canvas = None
         self.game = game
+        self.setup()
 
-        self.start()
-
-    def callback(self):
-        self.window.quit()
-
-    def run(self):
-        self.window = tk.Tk()
-        self.window.protocol("WM_DELETE_WINDOW", self.callback)
+    def setup(self):
+        # self.window = tk.Tk()
         h, w, _ = self.game.bg_world.shape
 
         # score_label = tk.Label(self.window, text=str(self.score))
@@ -50,7 +44,7 @@ class App(Thread):
         self.canvas = tk.Canvas(self.window, width=w, height=h)
         self.canvas.pack()
         self.window.bind("<Key>", self.key_pressed)
-        self.window.mainloop()
+        # self.window.mainloop()
 
     def update_label(self, label, text: str = ''):
         if hasattr(self.window, label):
@@ -119,7 +113,11 @@ class Game:
 
     def setup(self):
         self.reset()
-        self._window = App(self)
+        # self._window = App(self)
+        self.render_new_frame()
+
+    def set_window(self, window_app):
+        self._window = window_app
         self.render_new_frame()
 
     def reset(self):
