@@ -6,7 +6,7 @@ from cores import vehicle
 
 class curiosityGym:
     def __init__(self, config_path=None):
-        self.env = Game(config_path)
+        self.game = Game(config_path)
         self.score = 0
         self.total_step = 0
         self.done = 0
@@ -17,11 +17,11 @@ class curiosityGym:
         self.last_score = 0
 
     def reset(self):
-        self.env.reset()
+        self.game.reset()
         self.loop_detect = []
         self.loop_detect_dict = {}
         self.last_score = 0
-        return self.env.get_observation()
+        return self.game.get_observation()
 
     @staticmethod
     def reward_func(next_obs, total_step, score, last_score, done):
@@ -77,7 +77,7 @@ class curiosityGym:
         """
         :return: the size of the world
         """
-        return self.env.get_world_info()
+        return self.game.get_world_info()
 
     def get_observation_info(self):
         """
@@ -85,7 +85,7 @@ class curiosityGym:
         obs[1] where you have discovered
         :return:
         """
-        return self.env.get_obs_info()
+        return self.game.get_obs_info()
 
     def get_vehicle_status(self, vehicle_id=0):
         """
@@ -93,15 +93,15 @@ class curiosityGym:
         :param vehicle_id:
         :return: the status of vehicle: direction and location
         """
-        return self.env.get_vehicle_status(vehicle_id)
+        return self.game.get_vehicle_status(vehicle_id)
 
     def get_score(self):
-        return self.env.get_score()
+        return self.game.get_score()
 
     def step(self, action):
-        self.done, next_obs, loc = self.env.move_by_action(action)
-        self.score = self.env.score
-        self.total_step = self.env.step
+        self.done, next_obs, loc = self.game.move_by_action(action)
+        self.score = self.game.score
+        self.total_step = self.game.step
         reward = self.reward_func(next_obs, self.total_step, self.score, self.last_score, self.done)
         info = {'loop_detected': False}
 

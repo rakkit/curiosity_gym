@@ -18,6 +18,10 @@ from itertools import count, product
 from cores.curiosity_gym import curiosityGym
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
+import tkinter as tk
+from cores.game import App
+from threading import Thread
+
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -115,9 +119,11 @@ def optimize_model():
 
 
 if __name__ == '__main__':
+    env = curiosityGym()
+    app = App(env.game)
+
     best_score = -math.inf
     args = get_args()
-    env = curiosityGym()
     if not os.path.exists(args.logdir):
         os.mkdir(args.logdir)
 
@@ -173,3 +179,4 @@ if __name__ == '__main__':
             target_net.load_state_dict(policy_net.state_dict())
 
     print('Complete')
+

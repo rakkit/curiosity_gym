@@ -8,24 +8,32 @@ from cores.color_board import COLOR_BOARD
 import matplotlib.pyplot as plt
 from utils.perlin_noise import PerlinNoiseFactory
 from utils.ca_cave import CA_CaveFactory
-from utils import utils
+from utils import utils, score
 import copy
 from threading import Thread
-
-import utils.score
+import time
 from cores.vehicle import vehicleStatus, ACTION_MAP
 import random
 
 
-class App:
-    def __init__(self, tk_root, game):
-        self.window = tk_root
+class App(Thread):
+    def __init__(self, game):
+        Thread.__init__(self)
+        self.window = None
         self.canvas = None
         self.game = game
-        self.setup()
+        self.start()
+        time.sleep(1)
+        self.game.set_window(self)
 
-    def setup(self):
-        # self.window = tk.Tk()
+    def callback(self):
+        self.window.quit()
+        self.game.destroy_window()
+
+    def run(self):
+        self.window = tk.Tk()
+        # self.window.protocol("WM_DELETE_WINDOW", self.callback)
+
         h, w, _ = self.game.bg_world.shape
 
         # score_label = tk.Label(self.window, text=str(self.score))
@@ -44,7 +52,7 @@ class App:
         self.canvas = tk.Canvas(self.window, width=w, height=h)
         self.canvas.pack()
         self.window.bind("<Key>", self.key_pressed)
-        # self.window.mainloop()
+        self.window.mainloop()
 
     def update_label(self, label, text: str = ''):
         if hasattr(self.window, label):
@@ -57,10 +65,10 @@ class App:
     def key_pressed(self, event):
         if self.game.manual_control:
             keyboard_map = {
-                87: 1, 38: 1,
-                83: 3, 40: 3,
-                65: 4, 37: 4,
-                68: 2, 39: 2,
+                87: 1, 38: 1, 119: 1, 2300: 1,
+                83: 3, 40: 3, 115: 3, 2302: 3,
+                65: 4, 37: 4, 97: 4,  2299: 4,
+                68: 2, 39: 2, 100: 2, 2301: 2,
             }
             if event.keycode in keyboard_map:
                 self.game.move_by_action(keyboard_map[event.keycode])
@@ -120,6 +128,9 @@ class Game:
         self._window = window_app
         self.render_new_frame()
 
+    def destroy_window(self):
+        self._window = None
+
     def reset(self):
         self.step = 0
         self.score = 0
@@ -149,7 +160,7 @@ class Game:
         self.bg_world = np.zeros((self._world_height * self._cell_height, self._world_width * self._cell_width, 3))
         self.setup_vehicles()
         self.render_background()
-        self.scoreRecorder = utils.score.scoreRecorder(self.world, self.vehicle_status[0].receptive_radius)
+        self.scoreRecorder = score.scoreRecorder(self.world, self.vehicle_status[0].receptive_radius)
 
     def setup_vehicles(self):
         """
@@ -159,7 +170,7 @@ class Game:
         self.discovered_map = {}
         for vehicle_id in range(self.n_vehicles):
             self.vehicle_status[vehicle_id] = vehicleStatus()
-            _loc = utils.utils.generate_next_vehicle_random_pose(self.world)
+            _loc = utils.generate_next_vehicle_random_pose(self.world)
             self.vehicle_status[vehicle_id].position = _loc
             self.vehicle_status[vehicle_id].direction = np.random.randint(1, 5)
             self.vehicle_status[vehicle_id].receptive_radius = self.config['vehicle_receptive_radius'][vehicle_id]
@@ -189,7 +200,7 @@ class Game:
         vis_map = copy.deepcopy(self.bg_world)
         for vehicle_id in range(self.n_vehicles):
             vehicle_x, vehicle_y = self.vehicle_status[vehicle_id].position
-            xx, yy = utils.utils.generate_vehicle_coverage_idx(vehicle_x,
+            xx, yy = utils.generate_vehicle_coverage_idx(vehicle_x,
                                                                vehicle_y,
                                                                self._cell_width,
                                                                self._cell_height,
