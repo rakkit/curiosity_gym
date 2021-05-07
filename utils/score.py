@@ -26,7 +26,8 @@ class scoreRecorder:
             global_y = idx[1] + pos_y - self.receptive_radius
             _idx = (global_x>0) & (global_x<self.width) & (global_y>0) & (global_y<self.height)
 
-            # print(self.gt_map[global_x, global_y], self.gt_map[global_y, global_x])
+            # CURIOSITY IS 2-100
+            # Scale to 1-99
             self.discovered[global_x[_idx], global_y[_idx]] = observation[idx[0][_idx], idx[1][_idx]] - 1
 
     def get_score(self):

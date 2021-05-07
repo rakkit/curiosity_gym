@@ -11,6 +11,12 @@ FLOOR = 2
 
 class CA_CaveFactory:
     def __init__(self, length, width, initial_open=0.40):
+        """
+            Generate Obstacle
+            PERM_WALL = 0
+            WALL = 1
+            FLOOR = 2
+        """
         self.__length = length
         self.__width = width
         self.__area = length * width

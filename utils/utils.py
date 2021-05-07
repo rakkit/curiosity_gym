@@ -27,15 +27,15 @@ def generate_vehicle_coverage_idx(vehicle_x, vehicle_y, cell_height, cell_width,
     return xx, yy
 
 
-# def check_collision(_map, loc_x, loc_y):
-#     for dx in [-1, 0, 1]:
-#         for dy in [-1, 0, 1]:
-#             if dx == dy:
-#                 continue
-#             else:
-#                 if _map[loc_x+dx][loc_y+dy] != 1:
-#                     return True
-#     return False
+def map_to_vis_windows(idx_x, idx_y, _cell_height, _cell_width):
+    idx_x = np.array([[np.arange(0, _cell_height) + a * _cell_height] for a in idx_x]).flatten()
+
+    idx_y = np.array([[np.arange(0, _cell_width) + a * _cell_width] for a in idx_y]).flatten()
+
+    idx_x, idx_y = np.meshgrid(idx_x, idx_y, sparse=False)
+
+    return idx_x, idx_y
+
 
 class metrics_np():
     def __init__(self, n_class=1,hist=None):

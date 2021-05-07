@@ -1,6 +1,7 @@
 import numpy as np
 from cores.game import Game
 import time
+from cores import vehicle
 
 
 class curiosityGym:
@@ -68,8 +69,8 @@ class curiosityGym:
         """
 
         return {
-            'action_space': Game.ACTION_SPACE,
-            'action_map': Game.ACTION_MAP,
+            'action_space': vehicle.ACTION_SPACE,
+            'action_map': vehicle.ACTION_MAP,
         }
 
     def get_world_info(self):
