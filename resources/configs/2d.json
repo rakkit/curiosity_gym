@@ -1,0 +1,18 @@
+{
+  "world_size": [
+    100,
+    50
+  ],
+  "num_vehicles": 1,
+  "cell_size": [
+    10,
+    10
+  ],
+  "vehicle_size": 10,
+  "ca_cave_open_prob": 0.85,
+  "perlin_res": 40,
+  "perlin_prob": 0.5,
+  "vehicle_receptive_radius": [
+    2
+  ]
+}
