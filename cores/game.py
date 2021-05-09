@@ -14,64 +14,74 @@ from threading import Thread
 import time
 from cores.vehicle import vehicleStatus, ACTION_MAP
 import random
+import pygame
 
+class App:
+    _img = None
+    _score = '0'
+    _step = '0'
 
-class App(Thread):
     def __init__(self, game):
-        Thread.__init__(self)
-        self.window = None
-        self.canvas = None
-        self.game = game
-        self.start()
-        time.sleep(1)
-        self.game.set_window(self)
+        pygame.init()
 
-    def callback(self):
-        self.window.quit()
-        self.game.destroy_window()
+        self.game = game
+        self.width, self.height = game.get_resolution()
+
+        display_size = (self.width, self.height + 100)
+        self.display = pygame.display.set_mode(display_size)
+        self.running = True
+        self.lazy = True
+        # self.start()
+
+    def update_score(self, score=0):
+        self._score = str(score)
+        self.lazy = False
+
+    def update_step(self, step=0):
+        self._step = str(step)
+        self.lazy = False
+
+    def update_img(self, img=None):
+        self._img = np.transpose(img, (1, 0, 2))
+        self.lazy = False
+
+    def close(self):
+        self.running = False
 
     def run(self):
-        self.window = tk.Tk()
-        # self.window.protocol("WM_DELETE_WINDOW", self.callback)
+        running = True
+        while running and self.running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_w or event.key == pygame.K_UP:
+                        self.game.move_by_action(1)
+                    elif event.key == pygame.K_s or event.key == pygame.K_DOWN:
+                        self.game.move_by_action(3)
+                    elif event.key == pygame.K_a or event.key == pygame.K_LEFT:
+                        self.game.move_by_action(4)
+                    elif event.key == pygame.K_d or event.key == pygame.K_RIGHT:
+                        self.game.move_by_action(2)
 
-        h, w, _ = self.game.bg_world.shape
+            if not self.lazy:
+                self.display.fill((0, 0, 0))
 
-        # score_label = tk.Label(self.window, text=str(self.score))
-        # self.window.score_label = score_label
-        step_label = tk.Label(self.window, text='Step: ' + str(0))
-        step_label.place(x=0, y=0, )
-        step_label.pack()
-        # step_label.config(width=100)
-        self.window.step_label = step_label
+                if self._img is not None:
+                    surf = pygame.surfarray.make_surface(self._img)
+                    self.display.blit(surf, (0, 100))
 
-        score_label = tk.Label(self.window, text='Score: ' + str(0))
-        score_label.place(x=0, y=100)
-        score_label.pack()
-        # score_label.config(width=100)
-        self.window.score_label = score_label
-        self.canvas = tk.Canvas(self.window, width=w, height=h)
-        self.canvas.pack()
-        self.window.bind("<Key>", self.key_pressed)
-        self.window.mainloop()
+                font = pygame.font.Font(None, 30)
 
-    def update_label(self, label, text: str = ''):
-        if hasattr(self.window, label):
-            getattr(self.window, label).config(text=text)
+                score_label = font.render("Score: {:s}".format(self._score), True, (255, 255, 255))
+                self.display.blit(score_label, (self.width // 3, 10))
 
-    def update_canvas(self, img):
-        self.window.img = ImageTk.PhotoImage(image=Image.fromarray(img, 'RGB'))
-        self.canvas.create_image(0, 0, anchor="nw", image=self.window.img)
+                step_label = font.render("Step: {:s}".format(self._step), True, (255, 255, 255))
+                self.display.blit(step_label, (self.width // 3, 50))
+                pygame.display.update()
+            self.lazy = True
 
-    def key_pressed(self, event):
-        if self.game.manual_control:
-            keyboard_map = {
-                87: 1, 38: 1, 119: 1, 2300: 1,
-                83: 3, 40: 3, 115: 3, 2302: 3,
-                65: 4, 37: 4, 97: 4,  2299: 4,
-                68: 2, 39: 2, 100: 2, 2301: 2,
-            }
-            if event.keycode in keyboard_map:
-                self.game.move_by_action(keyboard_map[event.keycode])
+        pygame.quit()
 
 
 class Game:
@@ -119,16 +129,22 @@ class Game:
         random.seed(_seed)
         np.random.seed(_seed)
 
+    def get_resolution(self):
+        return (self._world_width * self._cell_width,
+                self._world_height * self._cell_height)
+
     def setup(self):
         self.reset()
         # self._window = App(self)
+        Thread(target=self.init_window).start()
         self.render_new_frame()
 
-    def set_window(self, window_app):
-        self._window = window_app
-        self.render_new_frame()
+    def init_window(self, ):
+        self._window = App(self)
+        self._window.run()
 
     def destroy_window(self):
+        self._window.close()
         self._window = None
 
     def reset(self):
@@ -162,6 +178,9 @@ class Game:
         self.render_background()
         self.scoreRecorder = score.scoreRecorder(self.world, self.vehicle_status[0].receptive_radius)
 
+        if self._window:
+            self.render_new_frame()
+
     def setup_vehicles(self):
         """
             Init the vehicle settings
@@ -181,8 +200,6 @@ class Game:
 
         self.vehicle_distance = np.zeros((self.n_vehicles, self.n_vehicles))
 
-
-
     def render_background(self):
         for c in np.unique(self.world):
             if c > 100:
@@ -201,12 +218,10 @@ class Game:
         for vehicle_id in range(self.n_vehicles):
             vehicle_x, vehicle_y = self.vehicle_status[vehicle_id].position
             xx, yy = utils.generate_vehicle_coverage_idx(vehicle_x,
-                                                               vehicle_y,
-                                                               self._cell_width,
-                                                               self._cell_height,
-                                                               self._cell_width)
-
-            vis_map[xx, yy, :] = COLOR_BOARD[101 + vehicle_id]
+                                                         vehicle_y,
+                                                         self._cell_width,
+                                                         self._cell_height,
+                                                         self._cell_width)
 
             vis_x, vis_y = np.where(self.trajectory_map[vehicle_id] == 1)
             if len(vis_x) > 0:
@@ -215,14 +230,17 @@ class Game:
                         vis_map[vis_x * self._cell_height + _height, vis_y * self._cell_width + _width, :] = \
                             COLOR_BOARD[151 + vehicle_id]
 
+            vis_map[xx, yy, :] = COLOR_BOARD[101 + vehicle_id]
+
+
         return vis_map.astype('uint8')
 
     def render_new_frame(self, ):
         vis_map = self.render_world()
         if self._window:
-            self._window.update_canvas(vis_map)
-            self._window.update_label('step_label', text='Step: ' + str(self.step))
-            self._window.update_label('score_label', text='Score : ' + str(self.score))
+            self._window.update_img(vis_map)
+            self._window.update_score(self.score)
+            self._window.update_step(self.step)
 
     def move_by_action(self, action, vehicle_id=0):
         self.step += 1
@@ -231,11 +249,12 @@ class Game:
         done = self.world[x + dx][y + dy] != 1
 
         if done:
-            # print('COLLISION DETECTED, RESETTING NOW...')
             if self.manual_control:
-                tk.messagebox.showinfo(title='hi',
-                                       message='You score is ' + str(self.score) + ' After ' + str(
-                                           self.step) + ' steps')  #
+                root = tk.Tk()
+                root.withdraw()
+                tkinter.messagebox.showinfo(title='hi',
+                                            message='You score is ' + str(self.score) + ' After ' + str(
+                                                self.step) + ' steps')  #
                 self.reset()
         else:
             self.vehicle_status[vehicle_id].position = [x + dx, y + dy]
@@ -243,7 +262,7 @@ class Game:
             self.world[x][y] = 1
             self.trajectory_map[vehicle_id][x][y] = 1
             self.vehicle_status[vehicle_id].direction = action
-            self.update_distance_of_vehicles(vehicle_id, x+dx, y+dy)
+            self.update_distance_of_vehicles(vehicle_id, x + dx, y + dy)
 
         self.render_new_frame()
         obs = self.get_observation()
@@ -305,14 +324,14 @@ class Game:
             self.vehicle_distance[i][vehicle_id] = dis
             self.vehicle_distance[vehicle_id][i] = dis
 
-    def swap_vehicle_infomation(self,):
+    def swap_vehicle_infomation(self, ):
         for i in range(self.n_vehicles):
             for j in range(1, self.n_vehicles):
                 dis = self.vehicle_distance[i][j]
                 if dis < self.vehicle_status[i].communication_dis and dis < self.vehicle_status[j].communication_dis:
-                    self.trajectory_map[i] = self.trajectory_map[j] =\
+                    self.trajectory_map[i] = self.trajectory_map[j] = \
                         (self.trajectory_map[i] | self.trajectory_map[j]).astype('uint8')
-                    self.discovered_map[i] = self.discovered_map[j] =\
+                    self.discovered_map[i] = self.discovered_map[j] = \
                         (self.discovered_map[i] | self.discovered_map[j]).astype('uint8')
 
     def get_vehicle_status(self, vehicle_id=0):
