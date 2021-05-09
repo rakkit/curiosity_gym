@@ -137,6 +137,7 @@ class Game:
         self.reset()
         # self._window = App(self)
         Thread(target=self.init_window).start()
+        time.sleep(1)
         self.render_new_frame()
 
     def init_window(self, ):
@@ -232,7 +233,6 @@ class Game:
 
             vis_map[xx, yy, :] = COLOR_BOARD[101 + vehicle_id]
 
-
         return vis_map.astype('uint8')
 
     def render_new_frame(self, ):
@@ -252,7 +252,7 @@ class Game:
             if self.manual_control:
                 root = tk.Tk()
                 root.withdraw()
-                tkinter.messagebox.showinfo(title='hi',
+                tkinter.messagebox.showinfo(title='Failed !',
                                             message='You score is ' + str(self.score) + ' After ' + str(
                                                 self.step) + ' steps')  #
                 self.reset()
